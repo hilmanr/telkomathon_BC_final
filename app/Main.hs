@@ -4,7 +4,7 @@ import System.IO (hFlush, stdout)
 import Data.Maybe 
 
 -- Main Program
-mainProgram :: ValinsCont -> Valins -> IO()
+mainProgram :: ValinsCont -> Valins -> String -> IO()
 
 mainProgram valinsCont valinsCurrent mode = do
 	case mode of 
@@ -16,14 +16,22 @@ mainProgram valinsCont valinsCurrent mode = do
 				"-" -> do
 					putStrLn "Selesai"
 				_ -> do
-					portNum <- getUserInput "Masukkan Port Number: "
+					let currentNum = getPortLength valinsCurrent
+					putStrLn ("- Port  " ++ (show currentNum) ++ "-")
 					portSN <- getUserInput "Masukkan SN: "
-					maybePortSN <- portSN >>= (\x -> getPortSN x)
-					let new_valins_port = createValinsPort (length valinsCurrent.portList) maybePortSN
+					-- maybePortSN <- return portSN >>= (\x -> getPortSN x)
+					let maybePortSN = getPortSN portSN
+					
+					-- let portNum = length currentList
+					let valinsPort = ValinsPort currentNum maybePortSN
+					let newValins = Valins (Just userInput) [valinsPort] (checkSignificant maybePortSN)
+					let newValinsCont = ValinsCont [valinsPort] [] Nothing [newValins]
+					print newValinsCont
+					-- let new_valins_port = createValinsPort (length valinsCurrent.portList) maybePortSN
 					-- Disini ubah portSN dari IO String, menjadi Just "Serial numbernya" atau Nothing kalau kosong
 					-- create ValinsPort
 					-- masukkan ValinsPort ke Valins
-					putStrLn $ portNum ++ portSN
+					-- putStrLn $ portNum ++ portSN
 
 		"current_valins" -> do
 			putStrLn "Mengisi port dari sebuah valins"
@@ -39,7 +47,7 @@ getUserInput str = do
 	getLine
 
 -- ADT
-data ValinsPort = ValinsPort { portNum :: String  
+data ValinsPort = ValinsPort { portNum :: Int  
                      , portSN :: Maybe String  
                      } deriving (Show)
 
@@ -64,21 +72,28 @@ createValins Nothing _ = Valins Nothing [] 0
 createValinsCont::ValinsCont
 createValinsCont = ValinsCont [] [] Nothing []
 
-createValinsPort::String -> Maybe String -> ValinsPort
+createValinsPort::Int -> Maybe String -> ValinsPort
 createValinsPort port_num (Just sn) = ValinsPort port_num (Just sn)
 createValinsPort port_num (Nothing) = ValinsPort port_num (Nothing)
 
 -- Function Processing
-getPortSN::String -> Maybe String
+getPortSN :: String -> Maybe String
 getPortSN x
 	| x /= "-" = Just x
 	| otherwise = Nothing
+
+getPortLength :: Valins -> Int
+getPortLength (Valins _ portL _) = (length portL) + 1
+
+checkSignificant :: Maybe String -> Int
+checkSignificant (Just x) = 1
+checkSignificant Nothing = 0
 
 -- Main
 main :: IO ()
 main = do
 	let valins_cont = createValinsCont
 	let valins_current = createValins Nothing []
-	mainProgram valins_cont valins_current
+	mainProgram valins_cont valins_current "new_valins"
 
 
