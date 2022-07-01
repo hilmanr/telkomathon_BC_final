@@ -4,9 +4,9 @@ import System.IO (hFlush, stdout)
 import Data.Maybe 
 
 -- Main Program
-mainProgram :: ValinsCont -> Valins -> String -> IO()
+mainProgram :: Valins -> String -> IO()
 
-mainProgram valinsCont valinsCurrent mode = do
+mainProgram valinsCurrent mode = do
 	case mode of 
 		"new_valins" -> do
 			putStrLn "\n\n\n----------- VALINS PROCESSOR -----------"
@@ -19,25 +19,41 @@ mainProgram valinsCont valinsCurrent mode = do
 					let currentNum = getPortLength valinsCurrent
 					putStrLn ("- Port  " ++ (show currentNum) ++ "-")
 					portSN <- getUserInput "Masukkan SN: "
-					-- maybePortSN <- return portSN >>= (\x -> getPortSN x)
 					let maybePortSN = getPortSN portSN
 					
 					-- let portNum = length currentList
 					let valinsPort = ValinsPort currentNum maybePortSN
 					let newValins = Valins (Just userInput) [valinsPort] (checkSignificant maybePortSN)
 					let newValinsCont = ValinsCont [valinsPort] [] Nothing [newValins]
-					print newValinsCont
-					-- let new_valins_port = createValinsPort (length valinsCurrent.portList) maybePortSN
-					-- Disini ubah portSN dari IO String, menjadi Just "Serial numbernya" atau Nothing kalau kosong
-					-- create ValinsPort
-					-- masukkan ValinsPort ke Valins
-					-- putStrLn $ portNum ++ portSN
-
+					mainProgram newValins "current_valins"
 		"current_valins" -> do
-			putStrLn "Mengisi port dari sebuah valins"
+			let currentNum = getPortLength valinsCurrent
+			if (currentNum <= 8)
+				then 
+					do
+						putStrLn ("- Port  " ++ (show currentNum) ++ "-")
+						portSN <- getUserInput "Masukkan SN: "
+						let currentPortList = getPortList valinsCurrent
+						let currentValID = getValinsID valinsCurrent
+						let maybePortSN = getPortSN portSN
+						let valinsPort = ValinsPort currentNum maybePortSN
+						let newValins = Valins (currentValID) (appendValins valinsPort currentPortList) (checkSignificant maybePortSN)
+						mainProgram newValins "current_valins"
+				else 
+					do 
+						putStrLn "FINISH"
+						-- Write Valins to File
+						-- Print ke layar hasil yang sudah diinputkan
+						confirm <- getUserInput "Pengisian valins selesai, ingin menambahkan valins baru lagi?"
+						case confirm of
+							"Y" -> do
+								let newValins = createValins Nothing []
+								mainProgram (newValins) "new_valins"
+							"N" -> do
+								putStrLn "Bersiap untuk memproses valins"
+		"process_valins" -> do
+			putStrLn "Memproses summary valins"
 
-		"process_valins" -> do 
-			putStrLn "Proses terakhir valins"
 
 
 getUserInput:: String -> IO String
@@ -85,15 +101,24 @@ getPortSN x
 getPortLength :: Valins -> Int
 getPortLength (Valins _ portL _) = (length portL) + 1
 
+getPortList :: Valins -> [ValinsPort]
+getPortList (Valins _ portL _) = portL
+
+getValinsID :: Valins -> Maybe String
+getValinsID (Valins valID _ _) = valID
+
 checkSignificant :: Maybe String -> Int
 checkSignificant (Just x) = 1
 checkSignificant Nothing = 0
 
+appendValins:: ValinsPort -> [ValinsPort] -> [ValinsPort]
+appendValins new [] = [new]
+appendValins new (x:xs) = x : appendValins new xs
+
 -- Main
 main :: IO ()
 main = do
-	let valins_cont = createValinsCont
 	let valins_current = createValins Nothing []
-	mainProgram valins_cont valins_current "new_valins"
+	mainProgram valins_current "new_valins"
 
 
