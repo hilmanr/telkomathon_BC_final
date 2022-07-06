@@ -1,7 +1,7 @@
 module Helper where
 
 import System.IO (hFlush, stdout)
-import Model
+import ADT
 
 maybeToString :: Maybe String -> String
 maybeToString (Just x) = x

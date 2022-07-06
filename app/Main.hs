@@ -4,6 +4,7 @@ import System.IO
 import Data.Maybe 
 import Helper
 import Model
+import ADT
 
 
 -- Main Program
@@ -66,38 +67,101 @@ mainProgram valinsCurrent mode = do
 		"process_valins" -> do
 			putStrLn "Memproses summary valins"
 			fileContent <- openFile "valins_list.txt" ReadMode
-			let valinsCont = ValinsCont [] [] Nothing []
+			let valinsCont = ValinsCont (initPortListCont 1) [] []
 			putStrLn "Reading File ..."
-			processValins valinsCont valinsCurrent fileContent
+			processValins valinsCont fileContent
 
 
 -- Process Data Valins. Read dari file, create valins container, cek significant valins, cari unmapped SN, populate valins List
 
 
 
-processValins :: ValinsCont -> Valins -> Handle -> IO ()
-processValins vCont v inH = do 
+processValins :: ValinsCont -> Handle -> IO()
+processValins vCont inH = do 
     ineof <- hIsEOF inH
     if ineof
-    	then 
-    		putStrLn "N OF FILE"
+    	then
+    		do
+	    		putStrLn "Processing Valins Done..."
+	    		putStrLn "Creating Summary...\n\n"
+	    		putStrLn "========================="
+	    		putStrLn "ODP PORT LIST:"
+	    		let portList = printValinsContPortList (getPortListCont vCont)
+	    		putStrLn portList
+	    		let sigValins = summaryValinsCount (getPortListCont vCont) (getValinsPortContVal vCont)
+    			
+    			putStrLn "========================="
+    			putStrLn "Significant Valins:"
+    			let maxTuple = findMaxTuple sigValins ("-",0)
+    			putStrLn $ "Valins ID = " ++ (fst maxTuple)
+    			putStrLn $ "SN Count = " ++ (show (snd maxTuple))
+
+    			putStrLn "========================="
+    			putStrLn "\nUnmapped SN:"
+    			let unmappedList = printValinsContPortList (getUnmapPortListCont vCont)
+    			putStrLn unmappedList
     	else
     		do 
+    			-- First Line = separator
     			inputStr <- hGetLine inH
-	    		case inputStr of
-	    			"---" -> do
-	    				putStrLn $ inputStr ++ " (IGNORE)"
-	    			(['v']['a']['l']['i']['n']['s']['_']['i']['d']['=']:id) -> do
-	    				putStrLn $ inputStr ++ " (FOUND VALINS ID)"
-	    			_ -> do 
-	    				putStrLn "End Of File"
-	    		processValins vCont v inH
-   --     if ineof
-   --         then {-return ()-} putStrLn "END"
-   --         else do 
-   --         	inpStr <- hGetLine inH
-			-- putStrLn inpStr
-			-- 	   -- processValins vCont v inH
+    			-- Second Line = Valins ID
+    			valIDStr <- hGetLine inH
+    			let valID = matchValinsID valIDStr
+
+    			-- port 1
+    			valPortStr <- hGetLine inH
+    			let valPort1 = matchPortNum valPortStr
+    			
+
+    			-- port 2
+    			valPortStr <- hGetLine inH
+    			let valPort2 = matchPortNum valPortStr
+    			
+
+    			-- port 3
+    			valPortStr <- hGetLine inH
+    			let valPort3 = matchPortNum valPortStr
+    			
+
+    			-- port 4
+    			valPortStr <- hGetLine inH
+    			let valPort4 = matchPortNum valPortStr
+    			
+
+    			-- port 5
+    			valPortStr <- hGetLine inH
+    			let valPort5 = matchPortNum valPortStr
+    			
+
+    			-- port 6
+    			valPortStr <- hGetLine inH
+    			let valPort6 = matchPortNum valPortStr
+    			
+
+    			-- port 7
+    			valPortStr <- hGetLine inH
+    			let valPort7 = matchPortNum valPortStr
+    			
+
+    			-- port 8
+    			valPortStr <- hGetLine inH
+    			let valPort8 = matchPortNum valPortStr
+    			
+    			-- rekap port list
+    			let valinsPortList = (valPort1:valPort2:valPort3:valPort4:valPort5:valPort6:valPort7:valPort8:[])
+
+    			-- create new valins
+    			let newValins = Valins (Just valID) valinsPortList
+    			
+    			let valinsContPortList = processValinsPortList valID valinsPortList (getPortListCont vCont)
+    			
+    			let unmappedList = processUnmappedPort valID valinsPortList (getPortListCont vCont)
+
+    			let valinsList = (getValinsPortContVal vCont) ++ [(valID,0)]
+
+    			let newValinsCont = ValinsCont valinsContPortList unmappedList valinsList
+
+	    		processValins newValinsCont inH
 
 
 
@@ -108,6 +172,7 @@ main = do
 	putStrLn "----------- VALINS PROCESSOR -----------"
 	putStrLn "----------------------------------------"
 	let valins_current = Valins Nothing []
+	writeFile "valins_list.txt" ""
 	mainProgram valins_current "new_valins"
 
 
